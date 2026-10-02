@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>مسیر عاشقانه</title>
+<style>
+/* برای تغییر رنگ‌بندی بازی، رنگ‌های این سه متغیر را ویرایش کنید. */
+:root{--wine:#8B0000;--red:#DC143C;--pink:#FFB6C1;--paper:#fff8f8;--text:#4a1018}
+*{box-sizing:border-box}body{margin:0;padding:20px 10px;min-height:100vh;background:linear-gradient(145deg,#fff0f3,var(--pink));color:var(--text);font-family:Tahoma,Arial,sans-serif;text-align:center}.wrap{max-width:850px;margin:auto}h1{color:var(--wine);margin:4px 0 8px}.board-frame{width:min(94vw,720px);aspect-ratio:1;margin:16px auto;padding:8px;border:4px solid var(--wine);border-radius:18px;background:#fff8;box-shadow:0 10px 30px #8b000033}.board{height:100%;display:grid;grid-template:repeat(6,1fr)/repeat(6,1fr);gap:4px}.square{position:relative;min-width:0;overflow:hidden;border:2px solid #a94757;border-radius:9px;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2px;font-size:clamp(8px,1.7vw,13px);font-weight:bold;line-height:1.2}.square.start,.square.finish{background:var(--wine);border-color:#560000;color:white}.square.card{background:#ffe5e9}.square.truth{background:#ffd5dd}.square.rest{background:#f5c3cc}.square.empty{background:var(--red);color:white}.square.icon{background:#fff0f2}.emoji{font-size:clamp(15px,3vw,25px)}.tokens{position:absolute;bottom:1px;display:flex;gap:2px}.token{font-size:clamp(12px,2vw,18px)}.active-square{box-shadow:0 0 12px var(--red);transform:scale(1.04);z-index:1}.center{grid-area:2/2/6/6;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--wine);padding:8px}.center h2{margin:0 0 8px}.players{display:flex;justify-content:center;flex-wrap:wrap;gap:8px;margin:10px}.player{padding:8px 13px;border:2px solid var(--pink);border-radius:12px;background:white}.player.active{border-color:var(--red);box-shadow:0 0 8px #dc143c66}button{border:0;border-radius:11px;background:var(--wine);color:white;padding:11px 22px;font:bold 16px Tahoma;cursor:pointer}button:hover{background:var(--red)}button:disabled{opacity:.55;cursor:default}.dice{height:62px;font-size:48px}.rolling{animation:roll .55s ease-in-out}@keyframes roll{to{transform:rotate(360deg) scale(1.15)}}.status{min-height:25px;font-weight:bold}.legend{display:flex;justify-content:center;flex-wrap:wrap;gap:7px;font-size:12px}.legend span{background:#fff9;padding:5px 8px;border-radius:8px}.modal{display:none;position:fixed;inset:0;z-index:5;background:#220008aa;align-items:center;justify-content:center;padding:16px}.modal.open{display:flex}.modal-box{width:min(430px,100%);background:var(--paper);border:3px solid var(--red);border-radius:18px;padding:22px;box-shadow:0 10px 30px #0005}.modal-box h2{color:var(--wine)}.modal-box p{font-size:18px;line-height:1.8}@media(max-width:500px){.board-frame{padding:4px;border-width:3px}.board{gap:2px}.square{border-width:1px;border-radius:5px}.center{padding:3px}.center p{font-size:11px}}
+</style>
+</head>
+<body>
+<main class="wrap">
+<h1>❤️ مسیر عاشقانه ❤️</h1><p>تاس بیندازید و در این مسیر دونفره پیش بروید!</p>
+<div class="players" id="players"></div>
+<section class="board-frame" aria-label="صفحهٔ بازی"><div class="board" id="board"></div></section>
+<div class="dice" id="dice" aria-label="تاس">🎲</div>
+<button id="roll" type="button">انداختن تاس</button>
+<p class="status" id="status" aria-live="polite">نوبت بازیکن اول است.</p>
+<div class="legend"><span>🃏 کارت شانسی</span><span>💬 راستش را بگو</span><span>☕ استراحت</span><span>💑 خانهٔ ویژه</span><span>❤️ خانهٔ قرمز</span></div>
+</main>
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"><div class="modal-box"><h2 id="modal-title"></h2><p id="modal-text"></p><button id="modal-close" type="button">ادامه</button></div></div>
+<script>
+'use strict';
+// برای شخصی‌سازی متن کارت‌ها، این ۱۵ مقدار را تغییر دهید.
+const cards=['کارت ۱','کارت ۲','کارت ۳','کارت ۴','کارت ۵','کارت ۶','کارت ۷','کارت ۸','کارت ۹','کارت ۱۰','کارت ۱۱','کارت ۱۲','کارت ۱۳','کارت ۱۴','کارت ۱۵'];
+// برای عوض‌کردن تصاویر/شکلک‌ها، مقادیر emoji را ویرایش کنید یا نمایش تصویر دلخواه بیفزایید.
+const info={card:['کارت شانسی','🃏'],truth:['راستش را بگو','💬'],rest:['استراحت','☕'],empty:['','❤️'],hug:['بغل','🤗'],kiss:['بوسه','💋'],queen:['ملکه','👑'],king:['شاه','🤴']};
+// ترکیب ۱۸ خانهٔ میانی ثابت است؛ فقط ترتیب در هر بار بارگذاری تصادفی می‌شود.
+const middle=['card','card','card','card','truth','truth','truth','rest','rest','empty','empty','empty','empty','hug','hug','kiss','queen','king'];
+for(let i=middle.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[middle[i],middle[j]]=[middle[j],middle[i]];}
+const squares=[{type:'start',label:'شروع',emoji:'🏁'},...middle.map(type=>({type,label:info[type][0],emoji:info[type][1]})),{type:'finish',label:'پایان',emoji:'🏆'}];
+// مختصات پیرامونی: ۶ بالا، ۴ راست، ۶ پایین و ۴ چپ؛ هر گوشه فقط یک بار شمرده می‌شود.
+const coords=[];for(let c=1;c<=6;c++)coords.push([1,c]);for(let r=2;r<=5;r++)coords.push([r,6]);for(let c=6;c>=1;c--)coords.push([6,c]);for(let r=5;r>=2;r--)coords.push([r,1]);
+const board=document.getElementById('board'),status=document.getElementById('status'),rollButton=document.getElementById('roll'),dice=document.getElementById('dice');
+const players=[{name:'بازیکن اول',token:'🔴',pos:0,skip:false},{name:'بازیکن دوم',token:'🔵',pos:0,skip:false}];let turn=0,busy=false,gameOver=false;
+function render(){board.innerHTML='';squares.forEach((s,i)=>{const cell=document.createElement('div');cell.className='square '+s.type;cell.id='sq-'+i;cell.style.gridRow=coords[i][0];cell.style.gridColumn=coords[i][1];const emoji=document.createElement('span');emoji.className='emoji';emoji.textContent=s.emoji;const label=document.createElement('span');label.textContent=s.label;const tokens=document.createElement('div');tokens.className='tokens';cell.append(emoji,label,tokens);board.appendChild(cell);});const center=document.createElement('div');center.className='center';center.innerHTML='<h2>💞 بازی دونفره 💞</h2><p>با هم تا خانهٔ پایانی پیش بروید.</p>';board.appendChild(center);renderTokens();}
+function renderTokens(){document.querySelectorAll('.tokens').forEach(x=>x.replaceChildren());players.forEach(p=>{const target=document.querySelector('#sq-'+p.pos+' .tokens');if(target){const t=document.createElement('span');t.className='token';t.textContent=p.token;target.appendChild(t);}});document.getElementById('players').innerHTML=players.map((p,i)=>'<div class="player '+(i===turn?'active':'')+'">'+p.token+' '+p.name+' — خانهٔ '+(p.pos+1)+'</div>').join('');}
+function modal(title,text,done){document.getElementById('modal-title').textContent=title;document.getElementById('modal-text').textContent=text;const m=document.getElementById('modal');m.classList.add('open');document.getElementById('modal-close').onclick=()=>{m.classList.remove('open');if(done)done();};}
+function nextTurn(){turn=1-turn;renderTokens();busy=false;rollButton.disabled=false;status.textContent='نوبت '+players[turn].name+' است.';}
+const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+async function playTurn(){if(busy||gameOver)return;busy=true;rollButton.disabled=true;const p=players[turn];if(p.skip){p.skip=false;status.textContent=p.name+' به‌خاطر خانهٔ استراحت این نوبت را از دست می‌دهد.';setTimeout(nextTurn,900);return;}dice.classList.add('rolling');let n=1;for(let i=0;i<9;i++){n=1+Math.floor(Math.random()*6);dice.textContent=['⚀','⚁','⚂','⚃','⚄','⚅'][n-1];await wait(65);}dice.classList.remove('rolling');status.textContent=p.name+' عدد '+n+' آورد.';const destination=Math.min(19,p.pos+n);for(let step=p.pos+1;step<=destination;step++){p.pos=step;renderTokens();document.querySelectorAll('.square').forEach(x=>x.classList.remove('active-square'));document.getElementById('sq-'+step).classList.add('active-square');await wait(240);}document.querySelectorAll('.square').forEach(x=>x.classList.remove('active-square'));if(p.pos===19){gameOver=true;modal('🏆 برنده!',p.name+' به خانهٔ ۲۰ رسید و برنده شد.',()=>{status.textContent='بازی تمام شد؛ '+p.name+' برنده است.';});return;}const landed=squares[p.pos];if(landed.type==='card'){modal('🃏 کارت شانسی',cards[Math.floor(Math.random()*cards.length)],nextTurn);}else if(landed.type==='truth'){modal('💬 راستش را بگو','یک حقیقت شیرین دربارهٔ خودت یا همراهت بگو!',nextTurn);}else if(landed.type==='rest'){p.skip=true;modal('☕ استراحت','این بازیکن نوبت بعدی خود را از دست می‌دهد.',nextTurn);}else if(['hug','kiss','queen','king'].includes(landed.type)){modal(landed.emoji,'به خانهٔ ویژهٔ «'+landed.label+'» رسیدی!',nextTurn);}else nextTurn();}
+rollButton.addEventListener('click',playTurn);render();renderTokens();
+</script>
+</body>
+</html>
